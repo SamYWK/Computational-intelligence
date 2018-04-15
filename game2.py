@@ -226,10 +226,10 @@ def fuzzy(front_sensor, right_sensor, left_sensor):
         right_sensor_flag.append('small')
         right_sensor_value = -(1/2) * right_sensor + 5
     #Large
-    if right_sensor > 10 and right_sensor <= 12:
+    if right_sensor > 10 and right_sensor <= 18:
         right_sensor_flag.append('large')
-        right_sensor_value = -(1/2) * right_sensor + 5
-    elif right_sensor > 12:
+        right_sensor_value = (1/8) * right_sensor - (5/4)
+    elif right_sensor > 18:
         right_sensor_flag.append('large')
         right_sensor_value = 1
     ################################################################
@@ -242,10 +242,10 @@ def fuzzy(front_sensor, right_sensor, left_sensor):
         left_sensor_flag.append('small')
         left_sensor_value = -(1/2) * left_sensor + 5
     #Large
-    if left_sensor > 10 and left_sensor <= 12:
+    if left_sensor > 10 and left_sensor <= 18:
         left_sensor_flag.append('large')
-        left_sensor_value = -(1/2) * left_sensor + 5
-    elif left_sensor > 12:
+        left_sensor_value = (1/8) * left_sensor - (5/4)
+    elif left_sensor > 18:
         left_sensor_flag.append('large')
         left_sensor_value = 1
         
@@ -263,7 +263,7 @@ def fuzzy(front_sensor, right_sensor, left_sensor):
         theta += turn_left_small(min(front_sensor_value, left_sensor_value))
     '''
     if 'large' in right_sensor_flag and 'small' in left_sensor_flag:
-        print('RS:', turn_right_small(min(right_sensor_value, left_sensor_value)))
+        print('RS:', min(right_sensor_value, left_sensor_value), turn_right_small(min(right_sensor_value, left_sensor_value)))
         theta += turn_right_small(min(right_sensor_value, left_sensor_value))
     if 'large' in left_sensor_flag and 'small' in right_sensor_flag:
         print('LS:', turn_left_small(min(right_sensor_value, left_sensor_value)))
