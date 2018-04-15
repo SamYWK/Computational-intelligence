@@ -90,7 +90,108 @@ def check_same_direction(sensor_vector, inter_point, position):
 def calcu_distance(position, point):
     return math.sqrt((position[0] - point[0])**2 + (position[1] - point[1])**2)
 
+def turn_right_small(value):
+    #(1/10)x - 1 = y
+    #-(1/10)x + 3 = y
+    if value == 0:
+        return 0
+    elif value == 1:
+        molecule = 0
+        denominator = 0
+        for i in range(100, 300):
+            j = i/10
+            denominator +=1
+            if j <= 20:
+                molecule += ((1/10)*j - 1)*j
+            else:
+                molecule += j
+        return molecule/denominator
+    else:
+        molecule = 0
+        denominator = 0
+        for i in range(100, 300):
+            j = i/10
+            denominator +=1
+            if j <= (value*10 - 1):
+                molecule += ((1/10)*j - 1)*j
+            elif j > (value*10 - 1) and j <= (value - 3)*(-10):
+                molecule += value * j 
+            else:
+                molecule += value*j
+        return molecule/denominator
+    
+def turn_left_small(value):
+    #(1/10)x - 1 = y
+    #-(1/10)x + 3 = y
+    if value == 0:
+        return 0
+    elif value == 1:
+        molecule = 0
+        denominator = 0
+        for i in range(100, 300):
+            j = i/10
+            denominator +=1
+            if j <= 20:
+                molecule += ((1/10)*j - 1)*j
+            else:
+                molecule += j
+        return -(molecule/denominator)
+    else:
+        molecule = 0
+        denominator = 0
+        for i in range(100, 300):
+            j = i/10
+            denominator +=1
+            if j <= (value*10 - 1):
+                molecule += ((1/10)*j - 1)*j
+            elif j > (value*10 - 1) and j <= (value - 3)*(-10):
+                molecule += value * j 
+            else:
+                molecule += value*j
+        return -(molecule/denominator)
+    
+def turn_right_large(value):
+    if value == 0:
+        return 0
+    elif value == 1:
+        molecule = 0
+        denominator = 0
+        for i in range(300, 400):
+            j = i /10
+            denominator +=1
+            molecule += j
+        return molecule/denominator
+    else:
+        molecule = 0
+        denominator = 0
+        for i in range(300, 400):
+            j = i /10
+            denominator +=1
+            molecule += value * j 
+        return molecule/denominator
+    
+def turn_left_large(value):
+    if value == 0:
+        return 0
+    elif value == 1:
+        molecule = 0
+        denominator = 0
+        for i in range(300, 400):
+            j = i /10
+            denominator +=1
+            molecule += j
+        return -(molecule/denominator)
+    else:
+        molecule = 0
+        denominator = 0
+        for i in range(300, 400):
+            j = i /10
+            denominator +=1
+            molecule += value * j 
+        return -(molecule/denominator)
+
 def fuzzy(front_sensor, right_sensor, left_sensor):
+    theta = 0
     #antecedent
     front_sensor_flag = []
     front_sensor_value = 0
@@ -100,12 +201,12 @@ def fuzzy(front_sensor, right_sensor, left_sensor):
     left_sensor_value = 0
     #front
     #Small
-    if front_sensor <= 7:
+    if front_sensor <= 10:
         front_sensor_flag.append('small')
         front_sensor_value = 1
-    elif front_sensor > 7 and front_sensor <= 11:
+    elif front_sensor > 10 and front_sensor <= 12:
         front_sensor_flag.append('small')
-        front_sensor_value = -(1/4) * front_sensor + (11/4)
+        front_sensor_value = -(1/2) * front_sensor + (6)
 
     #large
     if front_sensor > 12 and front_sensor <= 18:
@@ -118,51 +219,69 @@ def fuzzy(front_sensor, right_sensor, left_sensor):
     ################################################################
     #right
     #Small
-    if right_sensor <= 10:
+    if right_sensor <= 8:
         right_sensor_flag.append('small')
         right_sensor_value = 1
-    elif right_sensor > 10 and right_sensor <= 12:
+    elif right_sensor > 8 and right_sensor <= 10:
         right_sensor_flag.append('small')
-        right_sensor_value = (1/4) * right_sensor - (5/2)
-    elif right_sensor > 12 and right_sensor <= 14:
-        right_sensor_flag.append('small')
-        right_sensor_value = -(1/4) * right_sensor + (7/2)    
+        right_sensor_value = -(1/2) * right_sensor + 5
     #Large
     if right_sensor > 10 and right_sensor <= 12:
         right_sensor_flag.append('large')
-        right_sensor_value = (1/4) * right_sensor - (5/2)
-    elif right_sensor > 12 and right_sensor <= 14:
-        right_sensor_flag.append('large')
-        right_sensor_value = -(1/4) * right_sensor + (7/2)
-    elif right_sensor > 14:
+        right_sensor_value = -(1/2) * right_sensor + 5
+    elif right_sensor > 12:
         right_sensor_flag.append('large')
         right_sensor_value = 1
     ################################################################
     #left
     #Small
-    if left_sensor <= 10:
+    if left_sensor <= 8:
         left_sensor_flag.append('small')
         left_sensor_value = 1
-    elif left_sensor > 10 and left_sensor <= 12:
+    elif left_sensor > 8 and left_sensor <= 10:
         left_sensor_flag.append('small')
-        left_sensor_value = (1/4) * left_sensor - (5/2)
-    elif left_sensor > 12 and left_sensor <= 14:
-        left_sensor_flag.append('small')
-        left_sensor_value = -(1/4) * left_sensor + (7/2)    
+        left_sensor_value = -(1/2) * left_sensor + 5
     #Large
     if left_sensor > 10 and left_sensor <= 12:
         left_sensor_flag.append('large')
-        left_sensor_value = (1/4) * left_sensor - (5/2)
-    elif left_sensor > 12 and left_sensor <= 14:
-        left_sensor_flag.append('large')
-        left_sensor_value = -(1/4) * left_sensor + (7/2)
-    elif left_sensor > 14:
+        left_sensor_value = -(1/2) * left_sensor + 5
+    elif left_sensor > 12:
         left_sensor_flag.append('large')
         left_sensor_value = 1
+        
     print('F', front_sensor_flag)
     print('R', right_sensor_flag)
     print('L', left_sensor_flag)
+    
     #conclusion
+    '''
+    if 'large' in front_sensor_flag and 'large' in right_sensor_flag and 'small' not in right_sensor_flag:
+        print(turn_right_small(min(front_sensor_value, right_sensor_value)))
+        theta += turn_right_small(min(front_sensor_value, right_sensor_value))
+    if 'large' in front_sensor_flag and 'large' in left_sensor_flag and 'small' not in left_sensor_flag:
+        print(turn_left_small(min(front_sensor_value, left_sensor_value)))
+        theta += turn_left_small(min(front_sensor_value, left_sensor_value))
+    '''
+    if 'large' in right_sensor_flag and 'small' in left_sensor_flag:
+        print('RS:', turn_right_small(min(right_sensor_value, left_sensor_value)))
+        theta += turn_right_small(min(right_sensor_value, left_sensor_value))
+    if 'large' in left_sensor_flag and 'small' in right_sensor_flag:
+        print('LS:', turn_left_small(min(right_sensor_value, left_sensor_value)))
+        theta += turn_left_small(min(right_sensor_value, left_sensor_value))
+        
+    if 'small' in front_sensor_flag and 'large' in right_sensor_flag and 'small' not in right_sensor_flag:
+        print('RL:', turn_right_large(min(front_sensor_value, right_sensor_value)))
+        theta += turn_right_large(min(front_sensor_value, right_sensor_value))
+    if 'small' in front_sensor_flag and 'large' in left_sensor_flag and 'small' not in left_sensor_flag:
+        print('LL:',turn_left_large(min(front_sensor_value, left_sensor_value)))
+        theta += turn_left_large(min(front_sensor_value, left_sensor_value))
+    
+    if theta > 40 :
+        theta = 40
+    elif theta < -40:
+        theta = -40
+    print('theta :', theta)
+    return theta
 
 class Car(pygame.sprite.Sprite):
     def __init__(self, init_value):
@@ -307,8 +426,8 @@ def GUI(data):
                     if theta < -40:
                         theta = -40
                 elif event.key == pygame.K_RETURN:
-                    all_sprites.update(theta)
-                    fuzzy(front_distance, right_distance, left_distance)
+                    all_sprites.update(fuzzy(front_distance, right_distance, left_distance))
+                    #fuzzy(front_distance, right_distance, left_distance)
                     print(front_distance, right_distance, left_distance, car.get_fi())
                     f.write(str(front_distance)+' ')
                     f.write(str(right_distance)+' ')
