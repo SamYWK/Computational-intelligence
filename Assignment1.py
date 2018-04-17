@@ -28,6 +28,10 @@ clock = pygame.time.Clock()
 
 def fi_next(fi, theta):
     output = fi - math.degrees(math.asin(2*math.sin(math.radians(theta))/6))
+    if output > 270:
+        output -= 360
+    elif output <= -90:
+        output +=360
     #print('fi : ', output, math.degrees(math.asin(2*math.sin(math.radians(theta))/6)))
     return output
 
@@ -39,15 +43,24 @@ def x_next(x, fi, theta):
 def y_next(y, fi, theta):
     output = y + math.sin(math.radians(fi + theta)) - math.sin(math.radians(theta)) * math.cos(math.radians(fi))
     #print('y : ',output)
-    print('-----------')
+    #print('-----------')
     return output
 
-def message_display(theta):
+def message_display(is_end):
     myfont = pygame.font.SysFont('None', 30)
-    textsurface = myfont.render('Press Enter to next step. Wheel Degree : '+theta, True, BLACK)
+    if is_end:
+        textsurface = myfont.render('Arrived !!!', True, BLACK)
+    else:
+        textsurface = myfont.render('Press Enter to start.', True, BLACK)
     textrect = textsurface.get_rect()
     textrect.center = (220, 50)
     gameDisplay.blit(textsurface, textrect)
+    
+def check_in_end(position):
+    if position[0]>= 18 and position[0] <= 30 and position[1]>= 37 and position[1] <= 50:
+        return True
+    else:
+        return False
     
 def intersection(x1, y1, a1, x2, y2, a2):
     b1 = y1 - a1*x1
@@ -249,59 +262,49 @@ def fuzzy(front_sensor, right_sensor, left_sensor):
         left_sensor_flag.append('large')
         left_sensor_value = 1
         
-    print('F', front_sensor_flag)
-    print('R', right_sensor_flag)
-    print('L', left_sensor_flag)
+    #print('F', front_sensor_flag)
+    #print('R', right_sensor_flag)
+    #print('L', left_sensor_flag)
     
     #conclusion
-    '''
-    if 'large' in front_sensor_flag and 'large' in right_sensor_flag and 'small' not in right_sensor_flag:
-        print(turn_right_small(min(front_sensor_value, right_sensor_value)))
-        theta += turn_right_small(min(front_sensor_value, right_sensor_value))
-    if 'large' in front_sensor_flag and 'large' in left_sensor_flag and 'small' not in left_sensor_flag:
-        print(turn_left_small(min(front_sensor_value, left_sensor_value)))
-        theta += turn_left_small(min(front_sensor_value, left_sensor_value))
-    '''
     if 'large' in right_sensor_flag and 'small' in left_sensor_flag:
-        print('RS:', min(right_sensor_value, left_sensor_value), turn_right_small(min(right_sensor_value, left_sensor_value)))
+        #print('RS:', min(right_sensor_value, left_sensor_value), turn_right_small(min(right_sensor_value, left_sensor_value)))
         theta += turn_right_small(min(right_sensor_value, left_sensor_value))
     if 'large' in left_sensor_flag and 'small' in right_sensor_flag:
-        print('LS:', turn_left_small(min(right_sensor_value, left_sensor_value)))
+        #print('LS:', turn_left_small(min(right_sensor_value, left_sensor_value)))
         theta += turn_left_small(min(right_sensor_value, left_sensor_value))
         
     if 'small' in front_sensor_flag and 'large' in right_sensor_flag and 'small' not in right_sensor_flag:
-        print('RL:', turn_right_large(min(front_sensor_value, right_sensor_value)))
+        #print('RL:', turn_right_large(min(front_sensor_value, right_sensor_value)))
         theta += turn_right_large(min(front_sensor_value, right_sensor_value))
     if 'small' in front_sensor_flag and 'large' in left_sensor_flag and 'small' not in left_sensor_flag:
-        print('LL:',turn_left_large(min(front_sensor_value, left_sensor_value)))
+        #print('LL:',turn_left_large(min(front_sensor_value, left_sensor_value)))
         theta += turn_left_large(min(front_sensor_value, left_sensor_value))
     
     if theta > 40 :
         theta = 40
     elif theta < -40:
         theta = -40
-    print('theta :', theta)
+    #print('theta :', theta)
     return theta
 
 class Car(pygame.sprite.Sprite):
     def __init__(self, init_value):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface((6*SCALE, 6*SCALE))
-        #self.image.fill(WHITE)
-        #self.image = pygame.Surface((50, 50), pygame.SRCALPHA, 32)
-        #self.image = self.image.convert_alpha()
         self.rect = self.image.get_rect()
         self.pos_x = int(init_value[0])
         self.pos_y = int(init_value[1])
         self.fi = int(init_value[2])
         self.rect.center = (self.pos_x + X_ZERO, self.pos_y + Y_ZERO)
+        self.image.fill(WHITE)
         pygame.draw.circle(self.image, RED, (int(3*SCALE), int(3*SCALE)), 3*SCALE, 3) 
         pygame.draw.line(self.image, RED, (int(3*SCALE), int(3*SCALE)),
                         (3*SCALE*math.cos(math.radians(self.fi)) + int(3*SCALE), -3*SCALE*math.sin(math.radians(self.fi))+ int(3*SCALE)), 3) 
     
     def update(self, theta):
         #render update
-        self.image.fill(BLACK)
+        self.image.fill(WHITE)
         pygame.draw.circle(self.image, RED, (int(3*SCALE), int(3*SCALE)), 3*SCALE, 3) 
         pygame.draw.line(self.image, RED, (int(3*SCALE), int(3*SCALE)),
                         (3*SCALE*math.cos(math.radians(self.fi)) + int(3*SCALE), -3*SCALE*math.sin(math.radians(self.fi))+ int(3*SCALE)), 3) 
@@ -357,7 +360,7 @@ class Wall(pygame.sprite.Sprite):
         
         #vertical
         if (start_value[0] == stop_value[0]):
-            self.image = pygame.Surface((1*SCALE, abs(start_value[1] - stop_value[1])*SCALE))
+            self.image = pygame.Surface((1, abs(start_value[1] - stop_value[1])*SCALE))
             self.rect = self.image.get_rect()
             x_mean = (start_value[0] + stop_value[0])/2*SCALE
             y_mean = (start_value[1] + stop_value[1])/2*SCALE
@@ -366,7 +369,7 @@ class Wall(pygame.sprite.Sprite):
             #pygame.draw.line(self.image, RED, (start_value[0]*SCALE, start_value[1]*SCALE), (stop_value[0]*SCALE, stop_value[1]*SCALE), 3)
         #horizon
         elif (start_value[1] == stop_value[1]):
-            self.image = pygame.Surface(((abs(start_value[0] - stop_value[0]) + 1)*SCALE, 1*SCALE))
+            self.image = pygame.Surface(((abs(start_value[0] - stop_value[0]) + 1)*SCALE, 1))
             self.rect = self.image.get_rect()
             x_mean = (start_value[0] + stop_value[0])/2*SCALE
             y_mean = (start_value[1] + stop_value[1])/2*SCALE
@@ -374,7 +377,7 @@ class Wall(pygame.sprite.Sprite):
             
             #pygame.draw.line(self.image, RED, (start_value[0]*SCALE, start_value[1]*SCALE), (stop_value[0]*SCALE, stop_value[1]*SCALE), 3)
         else:
-            self.image = pygame.Surface((abs(start_value[0] - stop_value[0])*SCALE, 1*SCALE))
+            self.image = pygame.Surface((abs(start_value[0] - stop_value[0])*SCALE, 1))
             #self.image.fill(WHITE)
             self.rect = self.image.get_rect()
             x_mean = (start_value[0] + stop_value[0])/2*SCALE
@@ -386,15 +389,15 @@ class Wall(pygame.sprite.Sprite):
         return (self.point_1, self.point_2)
     
 def GUI(data):
-    f = open('B.txt', 'w', encoding = 'UTF-8')
+    f = open('train4D.txt', 'w', encoding = 'UTF-8')
+    f6 = open('train6D.txt', 'w', encoding = 'UTF-8')
     n, d = data.shape
-    theta = 0
     #sprites
     all_sprites = pygame.sprite.Group()
     walls = pygame.sprite.Group()
     car = Car(data[0])
     all_sprites.add(car)
-    #wall = Wall(data[3], data[4])
+    
     for i in range(3, n-1):
         #print(data[i], data[i+1])
         wall = Wall(data[i], data[i+1])
@@ -403,10 +406,10 @@ def GUI(data):
     
     #game loop
     running = True
+    start = False
     while running:
         #FPS
-        clock.tick(60)
-        
+        clock.tick(20)
         #get sensor
         front_distance = car.sensor(walls.sprites(), 'front')
         right_distance = car.sensor(walls.sprites(), 'right')
@@ -417,36 +420,34 @@ def GUI(data):
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RIGHT:
-                    theta += 5
-                    if theta > 40:
-                        theta = 40
-                elif event.key == pygame.K_LEFT:
-                    theta -= 5     
-                    if theta < -40:
-                        theta = -40
-                elif event.key == pygame.K_RETURN:
-                    all_sprites.update(fuzzy(front_distance, right_distance, left_distance))
-                    #fuzzy(front_distance, right_distance, left_distance)
-                    print(front_distance, right_distance, left_distance, car.get_fi())
-                    f.write(str(front_distance)+' ')
-                    f.write(str(right_distance)+' ')
-                    f.write(str(left_distance)+' ')
-                    f.write(str(car.get_fi())+'\n')
-                    theta = 0
+                if event.key == pygame.K_RETURN:
+                    start = True
         #update
-        
+        if start:
+            theta = fuzzy(front_distance, right_distance, left_distance)
+            f.write(str(front_distance)+' ')
+            f.write(str(right_distance)+' ')
+            f.write(str(left_distance)+' ')
+            f.write(str(theta)+'\n')
+            f6.write(str(car.get_x())+' ')
+            f6.write(str(car.get_y())+' ')
+            f6.write(str(front_distance)+' ')
+            f6.write(str(right_distance)+' ')
+            f6.write(str(left_distance)+' ')
+            f6.write(str(theta)+'\n')
+            all_sprites.update(theta)
         #collision
         hits = pygame.sprite.spritecollide(car, walls, False)
         if hits:
             running = False
-        
+            
         #render
         gameDisplay.fill(WHITE)
-        message_display(str(theta))
+        message_display(check_in_end((car.get_x(), car.get_y())))
         all_sprites.draw(gameDisplay)
         pygame.display.update()
     f.close()
+    f6.close()
     pygame.quit()
     quit()
 
