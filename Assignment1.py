@@ -8,6 +8,7 @@ Created on Sat Apr 14 16:56:25 2018
 import pygame
 import pandas as pd
 import math
+import time
 
 HEIGHT = 600
 WIDTH = 450
@@ -440,14 +441,18 @@ def GUI(data):
         hits = pygame.sprite.spritecollide(car, walls, False)
         if hits:
             running = False
-            
+        #end
+        is_end = check_in_end((car.get_x(), car.get_y()))
         #render
         gameDisplay.fill(WHITE)
-        message_display(check_in_end((car.get_x(), car.get_y())))
+        message_display(is_end)
+        if is_end:
+            running = False
         all_sprites.draw(gameDisplay)
         pygame.display.update()
     f.close()
     f6.close()
+    time.sleep(1)
     pygame.quit()
     quit()
 
