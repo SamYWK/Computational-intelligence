@@ -398,7 +398,7 @@ def GUI(data):
     walls = pygame.sprite.Group()
     car = Car(data[0])
     all_sprites.add(car)
-    
+    path = []
     for i in range(3, n-1):
         wall = Wall(data[i], data[i+1])
         all_sprites.add(wall)
@@ -442,12 +442,17 @@ def GUI(data):
             running = False
         #end
         is_end = check_in_end((car.get_x(), car.get_y()), data[1], data[2])
+        
         #render
         gameDisplay.fill(WHITE)
         message_display(is_end)
         if is_end:
             running = False
         all_sprites.draw(gameDisplay)
+        #print path
+        path.append((car.get_x(), car.get_y()))
+        for i in range(len(path)):
+            pygame.draw.circle(gameDisplay, RED, (int(path[i][0]*SCALE + X_ZERO), int(-path[i][1]*SCALE + Y_ZERO)), 1, 1)
         pygame.display.update()
     f.close()
     f6.close()
