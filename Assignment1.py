@@ -48,7 +48,7 @@ def y_next(y, fi, theta):
     return output
 
 def message_display(is_end):
-    myfont = pygame.font.SysFont('None', 30)
+    myfont = pygame.font.SysFont('arial', 30)
     if is_end:
         textsurface = myfont.render('Arrived !!!', True, BLACK)
     else:
@@ -57,8 +57,8 @@ def message_display(is_end):
     textrect.center = (220, 50)
     gameDisplay.blit(textsurface, textrect)
     
-def check_in_end(position):
-    if position[0]>= 18 and position[0] <= 30 and position[1]>= 37 and position[1] <= 50:
+def check_in_end(position, data_1, data_2):
+    if position[0]>= data_1[0] and position[0] <= data_2[0] and position[1]>= data_2[1] and position[1] <= data_1[1]:
         return True
     else:
         return False
@@ -400,7 +400,6 @@ def GUI(data):
     all_sprites.add(car)
     
     for i in range(3, n-1):
-        #print(data[i], data[i+1])
         wall = Wall(data[i], data[i+1])
         all_sprites.add(wall)
         walls.add(wall)
@@ -442,7 +441,7 @@ def GUI(data):
         if hits:
             running = False
         #end
-        is_end = check_in_end((car.get_x(), car.get_y()))
+        is_end = check_in_end((car.get_x(), car.get_y()), data[1], data[2])
         #render
         gameDisplay.fill(WHITE)
         message_display(is_end)
