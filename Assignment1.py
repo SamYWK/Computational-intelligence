@@ -114,24 +114,27 @@ def turn_right_small(value):
         denominator = 0
         for i in range(100, 300):
             j = i/10
-            denominator +=1
             if j <= 20:
                 molecule += ((1/10)*j - 1)*j
+                denominator += ((1/10)*j - 1)
             else:
-                molecule += j
+                molecule += (-(1/10)*j + 3)*j
+                denominator += -(1/10)*j + 3
         return molecule/denominator
     else:
         molecule = 0
         denominator = 0
         for i in range(100, 300):
             j = i/10
-            denominator +=1
             if j <= (value*10 - 1):
                 molecule += ((1/10)*j - 1)*j
+                denominator += ((1/10)*j - 1)
             elif j > (value*10 - 1) and j <= (value - 3)*(-10):
                 molecule += value * j 
+                denominator += value
             else:
-                molecule += value*j
+                molecule += (-(1/10)*j + 3)*j
+                denominator += -(1/10)*j + 3
         return molecule/denominator
     
 def turn_left_small(value):
@@ -144,24 +147,27 @@ def turn_left_small(value):
         denominator = 0
         for i in range(100, 300):
             j = i/10
-            denominator +=1
             if j <= 20:
                 molecule += ((1/10)*j - 1)*j
+                denominator += ((1/10)*j - 1)
             else:
-                molecule += j
+                molecule += (-(1/10)*j + 3)*j
+                denominator += -(1/10)*j + 3
         return -(molecule/denominator)
     else:
         molecule = 0
         denominator = 0
         for i in range(100, 300):
             j = i/10
-            denominator +=1
             if j <= (value*10 - 1):
                 molecule += ((1/10)*j - 1)*j
+                denominator += ((1/10)*j - 1)
             elif j > (value*10 - 1) and j <= (value - 3)*(-10):
                 molecule += value * j 
+                denominator += value
             else:
-                molecule += value*j
+                molecule += (-(1/10)*j + 3)*j
+                denominator += -(1/10)*j + 3
         return -(molecule/denominator)
     
 def turn_right_large(value):
@@ -172,7 +178,7 @@ def turn_right_large(value):
         denominator = 0
         for i in range(300, 400):
             j = i /10
-            denominator +=1
+            denominator += 1
             molecule += j
         return molecule/denominator
     else:
@@ -180,7 +186,7 @@ def turn_right_large(value):
         denominator = 0
         for i in range(300, 400):
             j = i /10
-            denominator +=1
+            denominator += value
             molecule += value * j 
         return molecule/denominator
     
@@ -192,7 +198,7 @@ def turn_left_large(value):
         denominator = 0
         for i in range(300, 400):
             j = i /10
-            denominator +=1
+            denominator += 1
             molecule += j
         return -(molecule/denominator)
     else:
@@ -200,7 +206,7 @@ def turn_left_large(value):
         denominator = 0
         for i in range(300, 400):
             j = i /10
-            denominator +=1
+            denominator += value
             molecule += value * j 
         return -(molecule/denominator)
 
@@ -233,33 +239,33 @@ def fuzzy(front_sensor, right_sensor, left_sensor):
     ################################################################
     #right
     #Small
-    if right_sensor <= 8:
+    if right_sensor <= 10:
         right_sensor_flag.append('small')
         right_sensor_value = 1
-    elif right_sensor > 8 and right_sensor <= 10:
+    elif right_sensor > 10 and right_sensor <= 12:
         right_sensor_flag.append('small')
-        right_sensor_value = -(1/2) * right_sensor + 5
+        right_sensor_value = -(1/2) * right_sensor + 6
     #Large
-    if right_sensor > 10 and right_sensor <= 18:
+    if right_sensor > 12 and right_sensor <= 20:
         right_sensor_flag.append('large')
-        right_sensor_value = (1/8) * right_sensor - (5/4)
-    elif right_sensor > 18:
+        right_sensor_value = (1/8) * right_sensor - (3/2)
+    elif right_sensor > 20:
         right_sensor_flag.append('large')
         right_sensor_value = 1
     ################################################################
     #left
     #Small
-    if left_sensor <= 8:
+    if left_sensor <= 10:
         left_sensor_flag.append('small')
         left_sensor_value = 1
-    elif left_sensor > 8 and left_sensor <= 10:
+    elif left_sensor > 10 and left_sensor <= 12:
         left_sensor_flag.append('small')
-        left_sensor_value = -(1/2) * left_sensor + 5
+        left_sensor_value = -(1/2) * left_sensor + 6
     #Large
-    if left_sensor > 10 and left_sensor <= 18:
+    if left_sensor > 12 and left_sensor <= 20:
         left_sensor_flag.append('large')
-        left_sensor_value = (1/8) * left_sensor - (5/4)
-    elif left_sensor > 18:
+        left_sensor_value = (1/8) * left_sensor - (3/2)
+    elif left_sensor > 20:
         left_sensor_flag.append('large')
         left_sensor_value = 1
         
