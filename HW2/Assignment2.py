@@ -281,7 +281,6 @@ def genetic_algo(score_list, colony_size, parameter_vector, crossover_rate, muta
         score_list[i] = score_list[i] / sum_of_score_list
         
     #roulette
-    choice = 1
     if choice == 0:
         chosen_index = (np.random.choice(colony_size, colony_size, p = score_list))
         for i in chosen_index:
@@ -315,8 +314,7 @@ def genetic_algo(score_list, colony_size, parameter_vector, crossover_rate, muta
     if crossover_dice < crossover_rate:  
         for i in range(int(colony_size/2)):
             choice = np.random.choice(2, 1)
-            si = np.random.random()
-            choice = 0
+            si = 0.1 * np.random.random()
             if choice == 0 :
                 temp_1 = pool[i * 2] + si * (pool[i * 2] - pool[i * 2 + 1])
                 temp_2 = pool[i * 2 + 1] - si * (pool[i * 2] - pool[i * 2 + 1])
@@ -332,7 +330,7 @@ def genetic_algo(score_list, colony_size, parameter_vector, crossover_rate, muta
     mutation_dice = np.random.random()
     #do mutation
     if mutation_dice < mutation_rate:
-        s = 0.01 * np.random.random()
+        s = np.random.random()
         choice = np.random.choice(colony_size, 1)
         noise = np.random.random((len(pool[choice[0]]),)) - 0.5
         pool[choice[0]] = pool[choice[0]] + s * noise
@@ -345,9 +343,9 @@ class RBFN():
         self.truth = data[:, -1:]
         self.data_n, self.data_d = self.data.shape
         self.j = j
-        
+
         self.mean = 2 * np.random.random((self.j, self.data_d)) - 1
-        self.variance = 2 * np.random.random((self.j,)) - 1
+        self.variance = np.random.random((self.j,))
         self.weights = 2 * np.random.random((self.j,)) - 1
         self.theta = 2 * np.random.random((1,)) - 1
         self.function_output = np.zeros((self.data_n, self.j))
@@ -356,6 +354,7 @@ class RBFN():
         for j_count in range(self.j):
             for i in range(self.data_n):
                 _ = (-1 * np.sum(np.square(self.data[i, :] - self.mean[j_count, :])))/ (2 * np.square(self.variance[j_count]))
+                #print('data', self.data[i, :], 'mean', self.mean[j_count, :], 'variance', self.variance[j_count], '_', _)
                 #print('_', _)
                 self.function_output[i, j_count] = math.exp(_)
                 
@@ -382,6 +381,18 @@ class RBFN():
         return np.concatenate((self.theta, self.weights, self.mean.flatten(), self.variance), axis = 0)
     
     def set_vector(self, next_parameter_vector):
+        
+        for i in range(len(next_parameter_vector)):
+            if i>= self.j*self.data_d + self.j+1:
+                if next_parameter_vector[i] > 1 :
+                    next_parameter_vector[i] = 1
+                elif next_parameter_vector[i] < 0:
+                    next_parameter_vector[i] = 10e-8
+            elif next_parameter_vector[i] > 1 :
+                next_parameter_vector[i] = 1
+            elif next_parameter_vector[i] < -1:
+                next_parameter_vector[i] = -1
+        
         #next_parameter_vector = np.tanh(next_parameter_vector)
         self.theta = np.asarray(next_parameter_vector[0:1])
         self.weights = np.asarray(next_parameter_vector[1 : self.j+1])
@@ -410,7 +421,7 @@ def main():
     
     #read data
     data_4d = read_files('./train4D.txt')
-    data_6d = read_files('./train4D.txt')
+    data_6d = read_files('./dummy.txt')
     
     #scale data
     scaler4d = MinMaxScaler(feature_range=(-1, 1))
@@ -466,7 +477,7 @@ def main():
         ###GA###
         next_parameter_vector = genetic_algo(score_list, colony_size, parameter_vector, crossover_rate, mutation_rate)
         
-        for i in range(len(rbfn_4d_list)):
+        for i in range(len(rbfn_6d_list)):
             rbfn_6d_list[i].set_vector(next_parameter_vector[i])
     
     #select best parameter
@@ -503,7 +514,7 @@ def main():
     '''
     
     for data in data_4d:
-        print(best_4d_rbfn.get_theta(data[0:3].reshape(1, -1), scaler4d), data[3])
+        print(best_4d_rbfn.get_theta(data[0:3].reshape(1, -1), scaler4d))
         
 if __name__ == '__main__':
     main()
