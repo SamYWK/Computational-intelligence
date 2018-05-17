@@ -173,7 +173,56 @@ class Car(pygame.sprite.Sprite):
                     saved_walls.append(calcu_distance((self.pos_x, self.pos_y), inter_point))
         #print('Walls distance :', saved_walls)
         return min(saved_walls)
+
+def collision(x, y, walls):
+    collision = False
+    for wall in walls:
+        #calculate slope
+        wall_slope = 1e10
+        if wall.get_points()[0][0] - wall.get_points()[1][0] != 0:
+            wall_slope = (wall.get_points()[0][1] - wall.get_points()[1][1]) / (wall.get_points()[0][0] - wall.get_points()[1][0])
         
+        #calculate intersection
+        inter_point = intersection(x, y, 1e-10, wall.get_points()[0][0], wall.get_points()[0][1], wall_slope)
+        if check_in_segment(inter_point, wall.get_points()):
+            if calcu_distance((x, y), inter_point) < 3:
+                collision = True
+        #calculate intersection
+        inter_point = intersection(x, y, 1e10, wall.get_points()[0][0], wall.get_points()[0][1], wall_slope)
+        if check_in_segment(inter_point, wall.get_points()):
+            if calcu_distance((x, y), inter_point) < 3:
+                collision = True
+        #calculate intersection
+        inter_point = intersection(x, y, 1, wall.get_points()[0][0], wall.get_points()[0][1], wall_slope)
+        if check_in_segment(inter_point, wall.get_points()):
+            if calcu_distance((x, y), inter_point) < 3:
+                collision = True
+        #calculate intersection
+        inter_point = intersection(x, y, -1, wall.get_points()[0][0], wall.get_points()[0][1], wall_slope)
+        if check_in_segment(inter_point, wall.get_points()):
+            if calcu_distance((x, y), inter_point) < 3:
+                collision = True
+        #calculate intersection
+        inter_point = intersection(x, y, (1/2), wall.get_points()[0][0], wall.get_points()[0][1], wall_slope)
+        if check_in_segment(inter_point, wall.get_points()):
+            if calcu_distance((x, y), inter_point) < 3:
+                collision = True
+        #calculate intersection
+        inter_point = intersection(x, y, -(1/2), wall.get_points()[0][0], wall.get_points()[0][1], wall_slope)
+        if check_in_segment(inter_point, wall.get_points()):
+            if calcu_distance((x, y), inter_point) < 3:
+                collision = True
+        #calculate intersection
+        inter_point = intersection(x, y, 1.7, wall.get_points()[0][0], wall.get_points()[0][1], wall_slope)
+        if check_in_segment(inter_point, wall.get_points()):
+            if calcu_distance((x, y), inter_point) < 3:
+                collision = True
+        #calculate intersection
+        inter_point = intersection(x, y, -1.7, wall.get_points()[0][0], wall.get_points()[0][1], wall_slope)
+        if check_in_segment(inter_point, wall.get_points()):
+            if calcu_distance((x, y), inter_point) < 3:
+                collision = True
+    return collision
         
 class Wall(pygame.sprite.Sprite):
     def __init__(self, start_value, stop_value):
@@ -244,11 +293,13 @@ def GUI(data, rbfn, scaler):
                     start = True
         #update
         if start:
-            sensor_value = np.array([[front_distance, right_distance, left_distance]])
-            theta = rbfn.get_theta(sensor_value, scaler)
+            sensor_value = np.array([[front_distance, right_distance, left_distance, 1]])
+            sensor_value = scaler.transform(sensor_value)
+            theta = rbfn.get_theta(sensor_value[:, 0:3], scaler)
             all_sprites.update(theta)
         #collision
-        hits = pygame.sprite.spritecollide(car, walls, False)
+        #hits = pygame.sprite.spritecollide(car, walls, False)
+        hits = collision(car.get_x(), car.get_y(), walls.sprites())
         if hits:
             running = False
         #end
@@ -279,7 +330,6 @@ def genetic_algo(score_list, colony_size, parameter_vector, crossover_rate, muta
     sum_of_score_list = sum(score_list)
     for i in range(len(score_list)):
         score_list[i] = score_list[i] / sum_of_score_list
-        
     #roulette
     if choice == 0:
         chosen_index = (np.random.choice(colony_size, colony_size, p = score_list))
@@ -298,8 +348,8 @@ def genetic_algo(score_list, colony_size, parameter_vector, crossover_rate, muta
                 reproduction_count[maximum_index[0]] -= 1
                 #print('-1')
             else :
-                minimum_index = [i for i, j in enumerate(score_list) if j == min(score_list)]
-                reproduction_count[minimum_index[0]] += 1
+                maximum_index = [i for i, j in enumerate(score_list) if j == max(score_list)]
+                reproduction_count[maximum_index[0]] += 1
                 #print('+1')
                 
     #print(reproduction_count)
@@ -314,7 +364,7 @@ def genetic_algo(score_list, colony_size, parameter_vector, crossover_rate, muta
     if crossover_dice < crossover_rate:  
         for i in range(int(colony_size/2)):
             choice = np.random.choice(2, 1)
-            si = 0.1 * np.random.random()
+            si = np.random.random()
             if choice == 0 :
                 temp_1 = pool[i * 2] + si * (pool[i * 2] - pool[i * 2 + 1])
                 temp_2 = pool[i * 2 + 1] - si * (pool[i * 2] - pool[i * 2 + 1])
@@ -354,8 +404,6 @@ class RBFN():
         for j_count in range(self.j):
             for i in range(self.data_n):
                 _ = (-1 * np.sum(np.square(self.data[i, :] - self.mean[j_count, :])))/ (2 * np.square(self.variance[j_count]))
-                #print('data', self.data[i, :], 'mean', self.mean[j_count, :], 'variance', self.variance[j_count], '_', _)
-                #print('_', _)
                 self.function_output[i, j_count] = math.exp(_)
                 
         return self.function_output.dot(self.weights) + self.theta
@@ -377,7 +425,6 @@ class RBFN():
         return np.sum(np.square(self.truth - fx))/2
     
     def get_vector(self):
-        #print(np.concatenate((self.theta, self.weights, self.mean.flatten(), self.variance), axis = 0))
         return np.concatenate((self.theta, self.weights, self.mean.flatten(), self.variance), axis = 0)
     
     def set_vector(self, next_parameter_vector):
@@ -453,6 +500,7 @@ def main():
             error = rbfn.adaptation_function(fx)
             #print(rbfn.get_vector())
             print(error)
+            error = math.pow(error, 10)
             score_list.append(1/error)
             parameter_vector.append(rbfn.get_vector())
            
@@ -506,7 +554,7 @@ def main():
     best_6d_rbfn = rbfn_6d_list[best_index]
     
     ###################pygame###################
-    '''
+    
     init_pygame()
     df = pd.read_table('./case01.txt', delimiter  = ',', header = None, keep_default_na = False)
     case01_list = df.values
@@ -515,6 +563,6 @@ def main():
     
     for data in data_4d:
         print(best_4d_rbfn.get_theta(data[0:3].reshape(1, -1), scaler4d))
-        
+    '''
 if __name__ == '__main__':
     main()

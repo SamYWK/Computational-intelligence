@@ -26,6 +26,47 @@ gameDisplay = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('GUI')
 clock = pygame.time.Clock()
 
+def intersection(x1, y1, a1, x2, y2, a2):
+    b1 = y1 - a1*x1
+    b2 = y2 - a2*x2
+    
+    if a1 > 1e4 or a1 < -1e4:
+        x = x1
+        y = a2*x + b2
+    elif a2 > 1e4 or a2 < -1e4:
+        x = x2
+        y = a1*x + b1
+    elif a1 == 0:
+        y = y1
+        x = (y - b2)/a2
+    elif a2 == 0:
+        y = y2
+        x = (y - b1)/a1
+    else:
+        x = round((b2 - b1)/(a1 - a2), 2)
+        y = a1*x + b1
+    #print(x1, y1, a1, x2, y2, a2, 'point :', (x, y))
+    return (x, y)
+
+def check_in_segment(point, wall):
+    if point[0] <= max(wall[0][0], wall[1][0]) and point[0] >= min(wall[0][0], wall[1][0]) and point[1] <= max(wall[0][1], wall[1][1]) and point[1] >= min(wall[0][1], wall[1][1]):
+        return True
+    else:
+        return False
+
+def check_same_direction(sensor_vector, inter_point, position):
+    #print('check_same_direction', sensor_vector, inter_point, position)
+    vector = (inter_point[0] - position[0], inter_point[1] - position[1])
+    if vector[0]*sensor_vector[0] > 0 or vector[1]*sensor_vector[1] > 0:
+        #print('True')
+        return True
+    else:
+        #print('False')
+        return False
+
+def calcu_distance(position, point):
+    return math.sqrt((position[0] - point[0])**2 + (position[1] - point[1])**2)
+
 def fi_next(fi, theta):
     output = fi - math.degrees(math.asin(2*math.sin(math.radians(theta))/36))
     print('fi : ', output, math.degrees(math.asin(2*math.sin(math.radians(theta))/36)))
@@ -66,7 +107,7 @@ class Car(pygame.sprite.Sprite):
         pygame.draw.line(self.image, RED, (int(3*SCALE), int(3*SCALE)),
                         (3*SCALE*math.cos(math.radians(self.fi)) + int(3*SCALE), -3*SCALE*math.sin(math.radians(self.fi))+ int(3*SCALE)), 3) 
     
-    def update(self, theta):
+    def update(self, x, y):
         #render update
         self.image.fill(BLACK)
         pygame.draw.circle(self.image, RED, (int(3*SCALE), int(3*SCALE)), 3*SCALE, 3) 
@@ -74,15 +115,23 @@ class Car(pygame.sprite.Sprite):
                         (3*SCALE*math.cos(math.radians(self.fi)) + int(3*SCALE), -3*SCALE*math.sin(math.radians(self.fi))+ int(3*SCALE)), 3) 
         
         #parameter update
-        self.fi = fi_next(self.fi, theta)
-        self.pos_x = x_next(self.pos_x, self.fi, theta)
-        self.pos_y = y_next(self.pos_y, self.fi, theta)
+        #self.fi = fi_next(self.fi, theta)
+        self.pos_x += x
+        self.pos_y += y
         self.rect.center = (self.pos_x*SCALE + X_ZERO, -self.pos_y*SCALE + Y_ZERO)
+        
+    def get_x(self):
+        return self.pos_x
+    
+    def get_y(self):
+        return self.pos_y
         
             
 class Wall(pygame.sprite.Sprite):
     def __init__(self, start_value, stop_value):
         pygame.sprite.Sprite.__init__(self)
+        self.point_1 = start_value
+        self.point_2 = stop_value
         #vertical
         if (start_value[0] == stop_value[0]):
             self.image = pygame.Surface((1*SCALE, abs(start_value[1] - stop_value[1])*SCALE))
@@ -110,6 +159,59 @@ class Wall(pygame.sprite.Sprite):
             self.rect.center = (x_mean + X_ZERO, -y_mean + Y_ZERO)
             pygame.draw.line(self.image, RED, (start_value[0]*SCALE, start_value[1]*SCALE), (stop_value[0]*SCALE, stop_value[1]*SCALE), 3)
 
+    def get_points(self):
+        return (self.point_1, self.point_2)
+
+def collision(x, y, walls):
+    collision = False
+    for wall in walls:
+        #calculate slope
+        wall_slope = 1e10
+        if wall.get_points()[0][0] - wall.get_points()[1][0] != 0:
+            wall_slope = (wall.get_points()[0][1] - wall.get_points()[1][1]) / (wall.get_points()[0][0] - wall.get_points()[1][0])
+        
+        #calculate intersection
+        inter_point = intersection(x, y, 1e-10, wall.get_points()[0][0], wall.get_points()[0][1], wall_slope)
+        if check_in_segment(inter_point, wall.get_points()):
+            if calcu_distance((x, y), inter_point) < 3:
+                collision = True
+        #calculate intersection
+        inter_point = intersection(x, y, 1e10, wall.get_points()[0][0], wall.get_points()[0][1], wall_slope)
+        if check_in_segment(inter_point, wall.get_points()):
+            if calcu_distance((x, y), inter_point) < 3:
+                collision = True
+        #calculate intersection
+        inter_point = intersection(x, y, 1, wall.get_points()[0][0], wall.get_points()[0][1], wall_slope)
+        if check_in_segment(inter_point, wall.get_points()):
+            if calcu_distance((x, y), inter_point) < 3:
+                collision = True
+        #calculate intersection
+        inter_point = intersection(x, y, -1, wall.get_points()[0][0], wall.get_points()[0][1], wall_slope)
+        if check_in_segment(inter_point, wall.get_points()):
+            if calcu_distance((x, y), inter_point) < 3:
+                collision = True
+        #calculate intersection
+        inter_point = intersection(x, y, (1/2), wall.get_points()[0][0], wall.get_points()[0][1], wall_slope)
+        if check_in_segment(inter_point, wall.get_points()):
+            if calcu_distance((x, y), inter_point) < 3:
+                collision = True
+        #calculate intersection
+        inter_point = intersection(x, y, -(1/2), wall.get_points()[0][0], wall.get_points()[0][1], wall_slope)
+        if check_in_segment(inter_point, wall.get_points()):
+            if calcu_distance((x, y), inter_point) < 3:
+                collision = True
+        #calculate intersection
+        inter_point = intersection(x, y, 1.7, wall.get_points()[0][0], wall.get_points()[0][1], wall_slope)
+        if check_in_segment(inter_point, wall.get_points()):
+            if calcu_distance((x, y), inter_point) < 3:
+                collision = True
+        #calculate intersection
+        inter_point = intersection(x, y, -1.7, wall.get_points()[0][0], wall.get_points()[0][1], wall_slope)
+        if check_in_segment(inter_point, wall.get_points()):
+            if calcu_distance((x, y), inter_point) < 3:
+                collision = True
+    return collision
+
 def GUI(data):
     n, d = data.shape
     theta = 0
@@ -131,25 +233,29 @@ def GUI(data):
         clock.tick(60)
         #process input
         for event in pygame.event.get():
+            x = 0
+            y = 0
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RIGHT:
-                    theta += 5
-                    if theta > 40:
-                        theta = 40
+                    x = 1
+                    all_sprites.update(x, y)
                 elif event.key == pygame.K_LEFT:
-                    theta -= 5     
-                    if theta < -40:
-                        theta = -40
-                elif event.key == pygame.K_RETURN:
-                    all_sprites.update(theta)
-                    theta = 0
+                    x = -1 
+                    all_sprites.update(x, y)
+                elif event.key == pygame.K_UP:
+                    y = 1
+                    all_sprites.update(x, y)
+                elif event.key == pygame.K_DOWN:
+                    y = -1
+                    all_sprites.update(x, y)
         #update
         
         
         #collision
-        hits = pygame.sprite.spritecollide(car, walls, False)
+        #hits = pygame.sprite.spritecollide(car, walls, False)
+        hits = collision(car.get_x(), car.get_y(), walls)
         if hits:
             running = False
         
