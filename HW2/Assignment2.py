@@ -499,6 +499,7 @@ def main():
     #training
     if dimension == 4:
         print('Training 4D data...')
+        start_time = time.time()
         for i in range(interation):
             score_list = []
             parameter_vector = []
@@ -506,7 +507,7 @@ def main():
             for rbfn in rbfn_4d_list:
                 fx = rbfn.basis_function()
                 error = rbfn.adaptation_function(fx)
-                print(error)
+                #print(error)
                 error = math.pow(error, 10)
                 score_list.append(1/error)
                 parameter_vector.append(rbfn.get_vector())
@@ -516,8 +517,11 @@ def main():
             #print(next_parameter_vector)
             for i in range(len(rbfn_4d_list)):
                 rbfn_4d_list[i].set_vector(next_parameter_vector[i])
+        print('4D Training time :', round((time.time() - start_time), 2), 'sec.')
+        
     elif dimension == 6:
         print('Training 6D data...')
+        start_time = time.time()
         for i in range(interation):
             score_list = []
             parameter_vector = []
@@ -525,7 +529,7 @@ def main():
             for rbfn in rbfn_6d_list:
                 fx = rbfn.basis_function()
                 error = rbfn.adaptation_function(fx)
-                print(error)
+                #print(error)
                 error = math.pow(error, 10)
                 score_list.append(1/error)
                 parameter_vector.append(rbfn.get_vector())
@@ -535,6 +539,7 @@ def main():
             
             for i in range(len(rbfn_6d_list)):
                 rbfn_6d_list[i].set_vector(next_parameter_vector[i])
+        print('6D Training time :', round((time.time() - start_time), 2), 'sec.')
     
     if dimension == 4:
         #select best parameter
