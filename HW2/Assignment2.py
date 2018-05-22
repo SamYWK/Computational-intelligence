@@ -260,7 +260,7 @@ class Wall(pygame.sprite.Sprite):
     def get_points(self):
         return (self.point_1, self.point_2)
     
-def GUI(data, rbfn, scaler):
+def GUI(data, rbfn, scaler, dimension):
     n, d = data.shape
     #sprites
     all_sprites = pygame.sprite.Group()
@@ -293,9 +293,14 @@ def GUI(data, rbfn, scaler):
                     start = True
         #update
         if start:
-            sensor_value = np.array([[front_distance, right_distance, left_distance, 1]])
-            sensor_value = scaler.transform(sensor_value)
-            theta = rbfn.get_theta(sensor_value[:, 0:3], scaler)
+            if dimension == 4 :
+                sensor_value = np.array([[front_distance, right_distance, left_distance, 1]])
+                sensor_value = scaler.transform(sensor_value)
+                theta = rbfn.get_theta(sensor_value[:, 0:3], scaler)
+            elif dimension == 6:
+                sensor_value = np.array([[car.get_x(), car.get_y(), front_distance, right_distance, left_distance, 1]])
+                sensor_value = scaler.transform(sensor_value)
+                theta = rbfn.get_theta(sensor_value[:, 0:5], scaler)
             all_sprites.update(theta)
         #collision
         #hits = pygame.sprite.spritecollide(car, walls, False)
@@ -450,6 +455,9 @@ class RBFN():
     
 def main():
     
+    dimension = int(input('Data dimension(4 or 6) :'))
+    while (dimension != 4 and dimension != 6 ):
+        dimension = int(input('Data dimension(4 or 6) :'))
     interation = int(input('Iteration count(>0) :'))
     while (interation <= 0):
         interation = int(input('Iteration count(>0) :'))
@@ -468,15 +476,14 @@ def main():
     
     #read data
     data_4d = read_files('./train4D.txt')
-    data_6d = read_files('./dummy.txt')
+    data_6d = read_files('./train6D.txt')
     
     #scale data
     scaler4d = MinMaxScaler(feature_range=(-1, 1))
     scaler4d.fit([[0, 0, 0, -40], [80, 80, 80, 40]])
     data_4d = scaler4d.transform(data_4d)
     scaler6d = MinMaxScaler(feature_range=(-1, 1))
-    #scaler6d.fit([[-75, -75, 0, 0, 0, -40], [75, 75, 80, 80, 80, 40]])
-    scaler6d.fit([[0, 0, 0, -40], [80, 80, 80, 40]])
+    scaler6d.fit([[-75, -75, 0, 0, 0, -40], [75, 75, 80, 80, 80, 40]])
     data_6d = scaler6d.transform(data_6d)
     
     ###RBFN###
@@ -490,75 +497,86 @@ def main():
         rbfn_6d_list.append(RBFN(data_6d, j))
     
     #training
-    print('Training 4D data...')
-    for i in range(interation):
-        score_list = []
-        parameter_vector = []
-        #calculate score
+    if dimension == 4:
+        print('Training 4D data...')
+        for i in range(interation):
+            score_list = []
+            parameter_vector = []
+            #calculate score
+            for rbfn in rbfn_4d_list:
+                fx = rbfn.basis_function()
+                error = rbfn.adaptation_function(fx)
+                print(error)
+                error = math.pow(error, 10)
+                score_list.append(1/error)
+                parameter_vector.append(rbfn.get_vector())
+               
+            ###GA###
+            next_parameter_vector = genetic_algo(score_list, colony_size, parameter_vector, crossover_rate, mutation_rate)
+            #print(next_parameter_vector)
+            for i in range(len(rbfn_4d_list)):
+                rbfn_4d_list[i].set_vector(next_parameter_vector[i])
+    elif dimension == 6:
+        print('Training 6D data...')
+        for i in range(interation):
+            score_list = []
+            parameter_vector = []
+            #calculate score
+            for rbfn in rbfn_6d_list:
+                fx = rbfn.basis_function()
+                error = rbfn.adaptation_function(fx)
+                print(error)
+                error = math.pow(error, 10)
+                score_list.append(1/error)
+                parameter_vector.append(rbfn.get_vector())
+               
+            ###GA###
+            next_parameter_vector = genetic_algo(score_list, colony_size, parameter_vector, crossover_rate, mutation_rate)
+            
+            for i in range(len(rbfn_6d_list)):
+                rbfn_6d_list[i].set_vector(next_parameter_vector[i])
+    
+    if dimension == 4:
+        #select best parameter
+        best_error = 1e8
+        best_index = 0
+        rbfn_index = 0
         for rbfn in rbfn_4d_list:
             fx = rbfn.basis_function()
             error = rbfn.adaptation_function(fx)
-            #print(rbfn.get_vector())
-            print(error)
-            error = math.pow(error, 10)
-            score_list.append(1/error)
-            parameter_vector.append(rbfn.get_vector())
-           
-        ###GA###
-        next_parameter_vector = genetic_algo(score_list, colony_size, parameter_vector, crossover_rate, mutation_rate)
-        #print(next_parameter_vector)
-        for i in range(len(rbfn_4d_list)):
-            rbfn_4d_list[i].set_vector(next_parameter_vector[i])
-    
-    print('Training 6D data...')
-    for i in range(interation):
-        score_list = []
-        parameter_vector = []
-        #calculate score
+            if error < best_error:
+                best_error = error
+                best_index = rbfn_index
+            rbfn_index += 1
+        best_4d_rbfn = rbfn_4d_list[best_index]
+        
+        
+        
+    elif dimension == 6:
+        best_error = 1e8
+        best_index = 0
+        rbfn_index = 0
         for rbfn in rbfn_6d_list:
             fx = rbfn.basis_function()
             error = rbfn.adaptation_function(fx)
-            #print(error)
-            score_list.append(1/error)
-            parameter_vector.append(rbfn.get_vector())
-           
-        ###GA###
-        next_parameter_vector = genetic_algo(score_list, colony_size, parameter_vector, crossover_rate, mutation_rate)
-        
-        for i in range(len(rbfn_6d_list)):
-            rbfn_6d_list[i].set_vector(next_parameter_vector[i])
-    
-    #select best parameter
-    best_error = 1e8
-    best_index = 0
-    rbfn_index = 0
-    for rbfn in rbfn_4d_list:
-        fx = rbfn.basis_function()
-        error = rbfn.adaptation_function(fx)
-        if error < best_error:
-            best_error = error
-            best_index = rbfn_index
-        rbfn_index += 1
-    best_4d_rbfn = rbfn_4d_list[best_index]
-    
-    best_error = 1e8
-    best_index = 0
-    rbfn_index = 0
-    for rbfn in rbfn_6d_list:
-        fx = rbfn.basis_function()
-        error = rbfn.adaptation_function(fx)
-        if error < best_error:
-            best_error = error
-            best_index = rbfn_index
-        rbfn_index += 1
-    best_6d_rbfn = rbfn_6d_list[best_index]
+            if error < best_error:
+                best_error = error
+                best_index = rbfn_index
+            rbfn_index += 1
+        best_6d_rbfn = rbfn_6d_list[best_index]
     
     ###################pygame###################
-    
-    init_pygame()
-    df = pd.read_table('./case01.txt', delimiter  = ',', header = None, keep_default_na = False)
-    case01_list = df.values
-    GUI(case01_list, best_4d_rbfn, scaler4d)
+    if dimension == 4:
+        init_pygame()
+        df = pd.read_table('./case01.txt', delimiter  = ',', header = None, keep_default_na = False)
+        case01_list = df.values
+        GUI(case01_list, best_4d_rbfn, scaler4d, dimension)
+        
+    elif dimension == 6:
+        init_pygame()
+        df = pd.read_table('./case01.txt', delimiter  = ',', header = None, keep_default_na = False)
+        case01_list = df.values
+        GUI(case01_list, best_6d_rbfn, scaler6d, dimension)
     '''
     
     for data in data_4d:
