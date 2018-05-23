@@ -339,6 +339,7 @@ def PSO(rbfn_4d_list, iteration, colony_size, fi_1, fi_2):
             global_best = rbfn_4d_list[i].get_vector()
             for j in range(len(rbfn_4d_list)):
                 if j != i:
+                    if rbfn_4d_list[j]
         
 class RBFN():
     def __init__(self, data, j):
