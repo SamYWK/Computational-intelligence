@@ -325,21 +325,34 @@ def PSO(rbfn_4d_list, iteration, colony_size, fi_1, fi_2):
     #initial
     best_parameter = []
     best_score = []
+    velocity = []
     for rbfn in rbfn_4d_list:
         best_parameter.append(rbfn.get_vector())
         best_score.append(1/(rbfn.adaptation_function(rbfn.basis_function())))
+        velocity.append(0)
     
+    #print('best_score', best_score)
+    #loop
     for iters in range(iteration):
-        #best so far
         for i in range(len(rbfn_4d_list)):
-            if best_score[i] < (1/(rbfn_4d_list[i].adaptation_function(rbfn_4d_list[i].basis_function()))):
+            #best so far
+            if (1/(rbfn_4d_list[i].adaptation_function(rbfn_4d_list[i].basis_function()))) > best_score[i]:
+                best_score[i] = (1/(rbfn_4d_list[i].adaptation_function(rbfn_4d_list[i].basis_function())))
                 best_parameter[i] = rbfn_4d_list[i].get_vector()
-        
+            #print('iters', iters, 'best_score', best_score)
             #global best
-            global_best = rbfn_4d_list[i].get_vector()
+            g = i
             for j in range(len(rbfn_4d_list)):
                 if j != i:
-                    if rbfn_4d_list[j]
+                    if (1/(rbfn_4d_list[j].adaptation_function(rbfn_4d_list[j].basis_function()))) > (1/(rbfn_4d_list[g].adaptation_function(rbfn_4d_list[g].basis_function()))):
+                        g = j
+            print('iters', iters, 'global best', (1/(rbfn_4d_list[g].adaptation_function(rbfn_4d_list[g].basis_function()))))
+            #calculate velocity
+            velocity[i] = velocity[i] + fi_1*(best_parameter[i] - rbfn_4d_list[i].get_vector()) + fi_2*(rbfn_4d_list[g].get_vector() - rbfn_4d_list[i].get_vector())
+            #print(velocity)
+            rbfn_4d_list[i].set_vector(rbfn_4d_list[i].get_vector() + velocity[i])
+    for i in range(len(rbfn_4d_list)):
+        print(1/(rbfn_4d_list[i].adaptation_function(rbfn_4d_list[i].basis_function())))
         
 class RBFN():
     def __init__(self, data, j):
@@ -453,11 +466,11 @@ def main():
     '''
        
     ###PSO###
-    next_parameter_vector = PSO(rbfn_4d_list, iteration, colony_size, fi_1, fi_2)
+    PSO(rbfn_4d_list, iteration, colony_size, fi_1, fi_2)
     
     #print(next_parameter_vector)
-    for i in range(len(rbfn_4d_list)):
-        rbfn_4d_list[i].set_vector(next_parameter_vector[i])
+    #for i in range(len(rbfn_4d_list)):
+        #rbfn_4d_list[i].set_vector(next_parameter_vector[i])
     
     print('4D Training time :', round((time.time() - start_time), 2), 'sec.')
         
