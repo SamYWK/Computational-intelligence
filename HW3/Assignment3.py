@@ -328,7 +328,8 @@ def PSO(rbfn_4d_list, iteration, colony_size, fi_1, fi_2):
     velocity = []
     for rbfn in rbfn_4d_list:
         best_parameter.append(rbfn.get_vector())
-        best_score.append(1/(rbfn.adaptation_function(rbfn.basis_function())))
+        rbfn.adaptation_function()
+        best_score.append(1/(rbfn.get_error()))
         velocity.append(0)
     
     #print('best_score', best_score)
@@ -336,23 +337,31 @@ def PSO(rbfn_4d_list, iteration, colony_size, fi_1, fi_2):
     for iters in range(iteration):
         for i in range(len(rbfn_4d_list)):
             #best so far
-            if (1/(rbfn_4d_list[i].adaptation_function(rbfn_4d_list[i].basis_function()))) > best_score[i]:
-                best_score[i] = (1/(rbfn_4d_list[i].adaptation_function(rbfn_4d_list[i].basis_function())))
+            if (1/(rbfn_4d_list[i].get_error())) > best_score[i]:
+                best_score[i] = (1/(rbfn_4d_list[i].get_error()))
                 best_parameter[i] = rbfn_4d_list[i].get_vector()
             #print('iters', iters, 'best_score', best_score)
             #global best
             g = i
             for j in range(len(rbfn_4d_list)):
                 if j != i:
-                    if (1/(rbfn_4d_list[j].adaptation_function(rbfn_4d_list[j].basis_function()))) > (1/(rbfn_4d_list[g].adaptation_function(rbfn_4d_list[g].basis_function()))):
+                    if (1/(rbfn_4d_list[j].get_error())) > (1/(rbfn_4d_list[g].get_error())):
                         g = j
-            print('iters', iters, 'global best', (1/(rbfn_4d_list[g].adaptation_function(rbfn_4d_list[g].basis_function()))))
+            
             #calculate velocity
             velocity[i] = velocity[i] + fi_1*(best_parameter[i] - rbfn_4d_list[i].get_vector()) + fi_2*(rbfn_4d_list[g].get_vector() - rbfn_4d_list[i].get_vector())
-            #print(velocity)
+            
+            
+            #limit velocity
+            for j in range(velocity[i].size):
+                if velocity[i][j] > 0.5:
+                    velocity[i][j] = 0.5
+                elif velocity[i][j] < -0.5:
+                    velocity[i][j] = -0.5
+                
             rbfn_4d_list[i].set_vector(rbfn_4d_list[i].get_vector() + velocity[i])
-    for i in range(len(rbfn_4d_list)):
-        print(1/(rbfn_4d_list[i].adaptation_function(rbfn_4d_list[i].basis_function())))
+            rbfn_4d_list[i].adaptation_function()
+        print('iters', iters, 'global best score', (1/(rbfn_4d_list[g].get_error())))
         
 class RBFN():
     def __init__(self, data, j):
@@ -366,14 +375,15 @@ class RBFN():
         self.weights = 2 * np.random.random((self.j,)) - 1
         self.theta = 2 * np.random.random((1,)) - 1
         self.function_output = np.zeros((self.data_n, self.j))
+        self.error = 0
         
-    def basis_function(self):
+    def adaptation_function(self):
         for j_count in range(self.j):
             for i in range(self.data_n):
                 _ = (-1 * np.sum(np.square(self.data[i, :] - self.mean[j_count, :])))/ (2 * np.square(self.variance[j_count]))
                 self.function_output[i, j_count] = math.exp(_)
-                
-        return self.function_output.dot(self.weights) + self.theta
+        fx = (self.function_output.dot(self.weights) + self.theta).reshape(-1, 1)
+        self.error = np.sum(np.square(self.truth - fx))/2
     
     def get_theta(self, sensor_value, scaler):
         output = np.zeros((1, self.j))
@@ -387,12 +397,11 @@ class RBFN():
         output = scaler.inverse_transform(np.concatenate((sensor_value, output), axis = 1))
         return output[:, -1]
     
-    def adaptation_function(self, fx):
-        fx = fx.reshape(-1, 1)
-        return np.sum(np.square(self.truth - fx))/2
-    
     def get_vector(self):
         return np.concatenate((self.theta, self.weights, self.mean.flatten(), self.variance), axis = 0)
+    
+    def get_error(self):
+        return self.error
     
     def set_vector(self, next_parameter_vector):
         
@@ -451,39 +460,17 @@ def main():
     #training
     print('Training 4D data...')
     start_time = time.time()
-    
-    '''
-    score_list = []
-    parameter_vector = []
-    #calculate score
-    for rbfn in rbfn_4d_list:
-        fx = rbfn.basis_function()
-        error = rbfn.adaptation_function(fx)
-        #print(error)
-        error = math.pow(error, 10)
-        score_list.append(1/error)
-        parameter_vector.append(rbfn.get_vector())
-    '''
        
     ###PSO###
     PSO(rbfn_4d_list, iteration, colony_size, fi_1, fi_2)
-    
-    #print(next_parameter_vector)
-    #for i in range(len(rbfn_4d_list)):
-        #rbfn_4d_list[i].set_vector(next_parameter_vector[i])
-    
     print('4D Training time :', round((time.time() - start_time), 2), 'sec.')
-        
-    
-    
     
     #select best parameter
     best_error = 1e8
     best_index = 0
     rbfn_index = 0
     for rbfn in rbfn_4d_list:
-        fx = rbfn.basis_function()
-        error = rbfn.adaptation_function(fx)
+        error = rbfn.get_error()
         if error < best_error:
             best_error = error
             best_index = rbfn_index
@@ -496,10 +483,5 @@ def main():
     case01_list = df.values
     GUI(case01_list, best_4d_rbfn, scaler4d)
         
-    '''
-    
-    for data in data_4d:
-        print(best_4d_rbfn.get_theta(data[0:3].reshape(1, -1), scaler4d))
-    '''
 if __name__ == '__main__':
     main()
